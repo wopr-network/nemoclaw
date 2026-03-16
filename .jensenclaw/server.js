@@ -40,7 +40,7 @@ const CURATED_MODELS = {
     extraBody: { chat_template_kwargs: { enable_thinking: true } },
   },
   "nvidia/nemotron-3-super": {
-    prefixedId: "private/openshell/nvidia/nemotron-3-super",
+    prefixedId: "private/openshell/nvidia/nemotron-3-super-120b-a12b",
     extraBody: { chat_template_kwargs: { enable_thinking: true, force_nonempty_content: true } },
   },
   "openai/gpt-oss-120b": {
