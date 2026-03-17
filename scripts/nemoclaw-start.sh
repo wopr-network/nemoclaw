@@ -182,3 +182,9 @@ nohup openclaw gateway run > /tmp/gateway.log 2>&1 &
 echo "[gateway] openclaw gateway launched (pid $!)"
 start_auto_pair
 print_dashboard_urls
+
+# Start WOPR sidecar — /internal/health + /internal/provision for nemoclaw-platform
+if [ -f /opt/wopr/sidecar.js ]; then
+  nohup node /opt/wopr/sidecar.js > /tmp/wopr-sidecar.log 2>&1 &
+  echo "[wopr-sidecar] launched (pid $!)"
+fi

@@ -1,0 +1,7 @@
+{
+  "name": "@wopr-network/nemoclaw-sidecar",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "WOPR provision sidecar for NemoClaw managed hosting"
+}

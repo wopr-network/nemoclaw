@@ -39,6 +39,9 @@ RUN mkdir -p /sandbox/.nemoclaw/blueprints/0.1.0 \
 COPY scripts/nemoclaw-start.sh /usr/local/bin/nemoclaw-start
 RUN chmod +x /usr/local/bin/nemoclaw-start
 
+# WOPR sidecar — provision + health endpoints for nemoclaw-platform
+COPY wopr/ /opt/wopr/
+
 WORKDIR /sandbox
 USER sandbox
 
