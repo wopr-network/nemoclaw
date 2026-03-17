@@ -293,6 +293,12 @@ echo "[gateway] openclaw gateway launched as 'gateway' user (pid $GATEWAY_PID)"
 start_auto_pair
 print_dashboard_urls
 
+# Start WOPR sidecar — /internal/health + /internal/provision for nemoclaw-platform
+if [ -f /opt/wopr/sidecar.js ]; then
+  nohup node /opt/wopr/sidecar.js > /tmp/wopr-sidecar.log 2>&1 &
+  echo "[wopr-sidecar] launched (pid $!)"
+fi
+
 # Keep container running by waiting on the gateway process.
 # This script is PID 1 (ENTRYPOINT); if it exits, Docker kills all children.
 wait "$GATEWAY_PID"

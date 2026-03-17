@@ -69,6 +69,9 @@ ENV NEMOCLAW_MODEL=${NEMOCLAW_MODEL} \
     NEMOCLAW_INFERENCE_API=${NEMOCLAW_INFERENCE_API} \
     NEMOCLAW_INFERENCE_COMPAT_B64=${NEMOCLAW_INFERENCE_COMPAT_B64}
 
+# WOPR sidecar — provision + health endpoints for nemoclaw-platform
+COPY wopr/ /opt/wopr/
+
 WORKDIR /sandbox
 USER sandbox
 
