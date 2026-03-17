@@ -1,6 +1,6 @@
 # Contributing to NVIDIA NemoClaw
 
-NVIDIA NemoClaw is an OpenClaw plugin that runs inside [NVIDIA OpenShell](https://github.com/NVIDIA/OpenShell).
+Thank you for your interest in contributing to NVIDIA NemoClaw. This guide covers how to set up your development environment, run tests, and submit changes.
 
 ## Before You Open an Issue
 
