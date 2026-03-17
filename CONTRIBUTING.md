@@ -4,11 +4,15 @@ Thank you for your interest in contributing to NVIDIA NemoClaw. This guide cover
 
 ## Before You Open an Issue
 
+Open an issue when you encounter one of the following situations.
+
 - A real bug that you confirmed and could not fix.
 - A feature proposal with a design — not a "please build this" request.
 - Security vulnerabilities must follow [SECURITY.md](SECURITY.md) — **not** GitHub issues.
 
 ## Prerequisites
+
+Install the following before you begin.
 
 - Node.js 20+ and npm 10+
 - Python 3.11+ (for blueprint and documentation builds)
@@ -56,6 +60,8 @@ These are the primary `make` and `npm` targets for day-to-day development:
 
 ## Project Structure
 
+The repository is organized as follows.
+
 | Path | Purpose |
 |------|---------|
 | `nemoclaw/` | TypeScript plugin (Commander CLI, OpenClaw extension) |
@@ -81,6 +87,8 @@ make docs-live  # serve locally with auto-rebuild
 See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for the full style guide and writing conventions.
 
 ## Pull Requests
+
+Follow these steps to submit a pull request.
 
 1. Create a feature branch from `main`.
 2. Make your changes with tests.
