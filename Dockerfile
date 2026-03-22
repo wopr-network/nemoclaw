@@ -45,13 +45,12 @@ COPY wopr/ /opt/wopr/
 WORKDIR /sandbox
 USER sandbox
 
-# Pre-create OpenClaw directories
+# Pre-create OpenClaw directories and write default config.
+# These are saved to /opt/nemoclaw-defaults/ (read-only at runtime).
+# The startup script copies them to $HOME/.openclaw/ (writable volume).
 RUN mkdir -p /sandbox/.openclaw/agents/main/agent \
     && chmod 700 /sandbox/.openclaw
 
-# Write openclaw.json: set nvidia as default provider, route through
-# inference.local (OpenShell gateway proxy). No API key needed here —
-# openshell injects credentials via the provider configuration.
 RUN python3 -c "\
 import json, os; \
 config = { \
@@ -67,9 +66,18 @@ path = os.path.expanduser('~/.openclaw/openclaw.json'); \
 json.dump(config, open(path, 'w'), indent=2); \
 os.chmod(path, 0o600)"
 
-# Install NemoClaw plugin into OpenClaw
 RUN openclaw doctor --fix > /dev/null 2>&1 || true \
     && openclaw plugins install /opt/nemoclaw > /dev/null 2>&1 || true
+
+# Save build-time config as defaults — startup script copies to writable HOME
+USER root
+RUN cp -a /sandbox/.openclaw /opt/nemoclaw-defaults \
+    && cp -a /sandbox/.nemoclaw /opt/nemoclaw-defaults/.nemoclaw
+USER sandbox
+
+# At runtime, HOME=/data (writable volume mount from FleetManager).
+# ReadonlyRootfs makes /sandbox read-only, so all writes go to /data.
+ENV HOME=/data
 
 EXPOSE 3100
 
