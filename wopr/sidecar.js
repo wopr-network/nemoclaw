@@ -112,7 +112,7 @@ const server = http.createServer((req, res) => {
   if (req.method === "GET" && url.pathname === "/internal/health") {
     const up = isGatewayUp();
     res.writeHead(up ? 200 : 503, { "content-type": "application/json" });
-    res.end(JSON.stringify({ ok: up, gateway: up ? "running" : "starting" }));
+    res.end(JSON.stringify({ ok: up, provisioning: up, gateway: up ? "running" : "starting" }));
     return;
   }
 
