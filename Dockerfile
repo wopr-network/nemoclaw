@@ -75,6 +75,12 @@ COPY wopr/ /opt/wopr/
 WORKDIR /sandbox
 USER sandbox
 
+# Pre-create OpenClaw directories and write default config.
+# These are saved to /opt/nemoclaw-defaults/ (read-only at runtime).
+# The startup script copies them to $HOME/.openclaw/ (writable volume).
+RUN mkdir -p /sandbox/.openclaw/agents/main/agent \
+    && chmod 700 /sandbox/.openclaw
+
 # Write the COMPLETE openclaw.json including gateway config and auth token.
 # This file is immutable at runtime (Landlock read-only on /sandbox/.openclaw).
 # No runtime writes to openclaw.json are needed or possible.
@@ -121,7 +127,6 @@ path = os.path.expanduser('~/.openclaw/openclaw.json'); \
 json.dump(config, open(path, 'w'), indent=2); \
 os.chmod(path, 0o600)"
 
-# Install NemoClaw plugin into OpenClaw
 RUN openclaw doctor --fix > /dev/null 2>&1 || true \
     && openclaw plugins install /opt/nemoclaw > /dev/null 2>&1 || true
 
@@ -148,6 +153,15 @@ RUN chown root:root /sandbox/.openclaw \
 RUN sha256sum /sandbox/.openclaw/openclaw.json > /sandbox/.openclaw/.config-hash \
     && chmod 444 /sandbox/.openclaw/.config-hash \
     && chown root:root /sandbox/.openclaw/.config-hash
+
+# Save build-time config as defaults — startup script copies to writable HOME
+RUN cp -a /sandbox/.openclaw /opt/nemoclaw-defaults \
+    && cp -a /sandbox/.nemoclaw /opt/nemoclaw-defaults/.nemoclaw
+USER sandbox
+
+# At runtime, HOME=/data (writable volume mount from FleetManager).
+# ReadonlyRootfs makes /sandbox read-only, so all writes go to /data.
+ENV HOME=/data
 
 # Expose WOPR sidecar port
 EXPOSE 3100

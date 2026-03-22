@@ -207,6 +207,20 @@ PYAUTOPAIR
 
 # ── Main ─────────────────────────────────────────────────────────
 
+# Copy default config to writable HOME if not already present.
+# FleetManager mounts a volume at /data and sets HOME=/data.
+# The rootfs is read-only, so all writes must go to /data.
+if [ -d /opt/nemoclaw-defaults ] && [ ! -f "${HOME}/.openclaw/openclaw.json" ]; then
+  echo "[init] Copying default config to ${HOME}/.openclaw/"
+  mkdir -p "${HOME}/.openclaw" "${HOME}/.nemoclaw"
+  cp -a /opt/nemoclaw-defaults/. "${HOME}/.openclaw/"
+  [ -d /opt/nemoclaw-defaults/.nemoclaw ] && cp -a /opt/nemoclaw-defaults/.nemoclaw/. "${HOME}/.nemoclaw/"
+fi
+
+# Ensure writable dirs exist
+mkdir -p "${HOME}/.openclaw/agents/main/agent" 2>/dev/null || true
+touch /tmp/gateway.log 2>/dev/null || true
+
 echo 'Setting up NemoClaw...'
 [ -f .env ] && chmod 600 .env
 
