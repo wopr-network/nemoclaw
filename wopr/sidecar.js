@@ -108,8 +108,8 @@ function provision(body) {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
 
-  // Health check — no auth required
-  if (req.method === "GET" && url.pathname === "/internal/health") {
+  // Health check — no auth required (provision-client checks /internal/provision/health)
+  if (req.method === "GET" && (url.pathname === "/internal/health" || url.pathname === "/internal/provision/health")) {
     const up = isGatewayUp();
     res.writeHead(up ? 200 : 503, { "content-type": "application/json" });
     res.end(JSON.stringify({ ok: up, provisioning: up, gateway: up ? "running" : "starting" }));
