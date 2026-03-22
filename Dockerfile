@@ -149,6 +149,9 @@ RUN sha256sum /sandbox/.openclaw/openclaw.json > /sandbox/.openclaw/.config-hash
     && chmod 444 /sandbox/.openclaw/.config-hash \
     && chown root:root /sandbox/.openclaw/.config-hash
 
+# Expose WOPR sidecar port
+EXPOSE 3100
+
 # Entrypoint runs as root to start the gateway as the gateway user,
 # then drops to sandbox for agent commands. See nemoclaw-start.sh.
 ENTRYPOINT ["/usr/local/bin/nemoclaw-start"]

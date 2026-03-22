@@ -293,10 +293,11 @@ echo "[gateway] openclaw gateway launched as 'gateway' user (pid $GATEWAY_PID)"
 start_auto_pair
 print_dashboard_urls
 
-# Start WOPR sidecar — /internal/health + /internal/provision for nemoclaw-platform
+# Start WOPR sidecar in foreground — keeps the container alive.
+# Serves /internal/health + /internal/provision for nemoclaw-platform.
 if [ -f /opt/wopr/sidecar.js ]; then
-  nohup node /opt/wopr/sidecar.js > /tmp/wopr-sidecar.log 2>&1 &
-  echo "[wopr-sidecar] launched (pid $!)"
+  echo "[wopr-sidecar] starting in foreground (port ${PORT:-3100})"
+  exec node /opt/wopr/sidecar.js
 fi
 
 # Keep container running by waiting on the gateway process.

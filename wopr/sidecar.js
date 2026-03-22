@@ -14,7 +14,7 @@ import os from "node:os";
 
 const SECRET = process.env.WOPR_PROVISION_SECRET ?? "";
 const GATEWAY_URL = process.env.WOPR_GATEWAY_URL ?? "";
-const PORT = parseInt(process.env.WOPR_SIDECAR_PORT ?? "3001", 10);
+const PORT = parseInt(process.env.PORT ?? process.env.WOPR_SIDECAR_PORT ?? "3100", 10);
 const OPENCLAW_CONFIG_PATH = path.join(os.homedir(), ".openclaw", "openclaw.json");
 
 function assertSecret(req) {
