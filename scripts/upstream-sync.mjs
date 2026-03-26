@@ -280,30 +280,27 @@ function pushOrPr() {
     return;
   }
 
-  // Configure git auth — write a tiny credential helper that returns the GH_TOKEN
-  // This is the simplest approach: no headers, no base64, no quoting issues
+  // Push using GH_TOKEN embedded directly in the remote URL
+  // Use a fresh remote to avoid any cached credential interference
   const ghToken = process.env.GH_TOKEN;
-  const pushEnv = { ...process.env, GIT_TERMINAL_PROMPT: "0" };
-  if (ghToken) {
-    // Write a one-shot credential helper script
-    const helperPath = join("/tmp", `git-cred-helper-${Date.now()}.sh`);
-    writeFileSync(helperPath, `#!/bin/sh\necho "username=x-access-token"\necho "password=${ghToken}"\n`, { mode: 0o700 });
-    // GIT_CONFIG_COUNT overrides all config levels including system
-    pushEnv.GIT_CONFIG_COUNT = "2";
-    pushEnv.GIT_CONFIG_KEY_0 = "credential.helper";
-    pushEnv.GIT_CONFIG_VALUE_0 = helperPath;
-    pushEnv.GIT_CONFIG_KEY_1 = "credential.useHttpPath";
-    pushEnv.GIT_CONFIG_VALUE_1 = "true";
-    log("Will use credential helper script for push.");
-  }
 
   function gitPush(args) {
-    return execSync(`git ${args}`, {
-      cwd: CWD,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-      env: pushEnv,
-    }).trim();
+    if (!ghToken) return run(`git ${args}`);
+    // Add a temp remote with token in URL — bypasses all credential helpers entirely
+    const tmpRemote = `_push_${Date.now()}`;
+    const tokenUrl = `https://x-access-token:${ghToken}@github.com/wopr-network/nemoclaw.git`;
+    try {
+      run(`git remote add ${tmpRemote} ${tokenUrl}`);
+      const result = execSync(`git ${args.replace("origin", tmpRemote)}`, {
+        cwd: CWD,
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "/bin/echo" },
+      }).trim();
+      return result;
+    } finally {
+      tryRun(`git remote remove ${tmpRemote}`);
+    }
   }
 
   if (AUTO_PUSH) {
