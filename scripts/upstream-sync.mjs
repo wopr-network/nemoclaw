@@ -280,20 +280,21 @@ function pushOrPr() {
     return;
   }
 
-  // Configure git auth — use GIT_CONFIG_COUNT env vars to override ALL config levels
-  // This bypasses system credential managers without sudo and avoids shell quoting issues
+  // Configure git auth — write a tiny credential helper that returns the GH_TOKEN
+  // This is the simplest approach: no headers, no base64, no quoting issues
   const ghToken = process.env.GH_TOKEN;
-  const pushEnv = {};
+  const pushEnv = { ...process.env, GIT_TERMINAL_PROMPT: "0" };
   if (ghToken) {
-    const basicAuth = Buffer.from(`x-access-token:${ghToken}`).toString("base64");
-    // GIT_CONFIG_COUNT/KEY/VALUE env vars override all config levels for the process
+    // Write a one-shot credential helper script
+    const helperPath = join("/tmp", `git-cred-helper-${Date.now()}.sh`);
+    writeFileSync(helperPath, `#!/bin/sh\necho "username=x-access-token"\necho "password=${ghToken}"\n`, { mode: 0o700 });
+    // GIT_CONFIG_COUNT overrides all config levels including system
     pushEnv.GIT_CONFIG_COUNT = "2";
     pushEnv.GIT_CONFIG_KEY_0 = "credential.helper";
-    pushEnv.GIT_CONFIG_VALUE_0 = "";
-    pushEnv.GIT_CONFIG_KEY_1 = "http.https://github.com/.extraheader";
-    pushEnv.GIT_CONFIG_VALUE_1 = `AUTHORIZATION: basic ${basicAuth}`;
-    pushEnv.GIT_TERMINAL_PROMPT = "0";
-    log("Will use GIT_CONFIG env overrides for push.");
+    pushEnv.GIT_CONFIG_VALUE_0 = helperPath;
+    pushEnv.GIT_CONFIG_KEY_1 = "credential.useHttpPath";
+    pushEnv.GIT_CONFIG_VALUE_1 = "true";
+    log("Will use credential helper script for push.");
   }
 
   function gitPush(args) {
@@ -301,7 +302,7 @@ function pushOrPr() {
       cwd: CWD,
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
-      env: { ...process.env, ...pushEnv },
+      env: pushEnv,
     }).trim();
   }
 
