@@ -280,27 +280,41 @@ function pushOrPr() {
     return;
   }
 
-  // Configure git auth — use inline -c flags to override ALL config levels (including system)
-  // This is the only approach that beats a system-level credential manager without sudo
+  // Configure git auth — use GIT_CONFIG_COUNT env vars to override ALL config levels
+  // This bypasses system credential managers without sudo and avoids shell quoting issues
   const ghToken = process.env.GH_TOKEN;
-  let gitPushPrefix = "git";
+  const pushEnv = {};
   if (ghToken) {
     const basicAuth = Buffer.from(`x-access-token:${ghToken}`).toString("base64");
-    // -c flags override system/global/local config for this command only
-    gitPushPrefix = `git -c credential.helper= -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${basicAuth}"`;
-    log("Will use inline -c auth overrides for push.");
+    // GIT_CONFIG_COUNT/KEY/VALUE env vars override all config levels for the process
+    pushEnv.GIT_CONFIG_COUNT = "2";
+    pushEnv.GIT_CONFIG_KEY_0 = "credential.helper";
+    pushEnv.GIT_CONFIG_VALUE_0 = "";
+    pushEnv.GIT_CONFIG_KEY_1 = "http.https://github.com/.extraheader";
+    pushEnv.GIT_CONFIG_VALUE_1 = `AUTHORIZATION: basic ${basicAuth}`;
+    pushEnv.GIT_TERMINAL_PROMPT = "0";
+    log("Will use GIT_CONFIG env overrides for push.");
+  }
+
+  function gitPush(args) {
+    return execSync(`git ${args}`, {
+      cwd: CWD,
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env, ...pushEnv },
+    }).trim();
   }
 
   if (AUTO_PUSH) {
     log("Force-pushing to origin/main...");
-    run(`${gitPushPrefix} push --force-with-lease origin main`);
+    gitPush("push --force-with-lease origin main");
     log("Pushed successfully.");
   } else if (CREATE_PR) {
     const datestamp = new Date().toISOString().slice(0, 10);
     const branch = `sync/upstream-${datestamp}`;
     tryRun(`git branch -D ${branch}`);
     run(`git checkout -b ${branch}`);
-    run(`${gitPushPrefix} push -u origin ${branch} --force-with-lease`);
+    gitPush(`push -u origin ${branch} --force-with-lease`);
 
     const prBody = [
       "## Automated upstream sync",
