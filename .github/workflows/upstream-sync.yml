@@ -56,6 +56,8 @@ jobs:
 
       - name: Install Agent SDK
         run: |
+          npm cache clean --force 2>/dev/null || true
+          rm -rf "$(npm root -g)/@anthropic-ai/claude-code" "$(npm root -g)/@anthropic-ai/claude-agent-sdk" 2>/dev/null || true
           npm install -g @anthropic-ai/claude-code
           npm install -g @anthropic-ai/claude-agent-sdk
 
