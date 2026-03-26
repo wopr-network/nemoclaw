@@ -286,14 +286,7 @@ function pushOrPr() {
 
   function gitPush(args) {
     if (!ghToken) return run(`git ${args}`);
-    // Debug: dump what credential helpers are active
-    log("DEBUG credential.helper: " + tryRun("git config --show-origin --get-all credential.helper").output);
-    log("DEBUG GH_PAT first 8: " + ghToken.slice(0, 8) + "...");
-    log("DEBUG git credential-manager version: " + tryRun("git-credential-manager --version").output);
-    log("DEBUG gh auth status: " + tryRun("gh auth status").output);
-    // Use gh CLI's built-in git credential helper instead of fighting it
-    // gh auth setup-git registers gh as credential.helper for github.com
-    // So just make sure GH_TOKEN env is set — gh respects it for auth
+    // gh on the runner picks up GH_TOKEN env for auth — just pass it through
     const result = execSync(`git ${args}`, {
       cwd: CWD,
       encoding: "utf-8",
@@ -331,7 +324,7 @@ function pushOrPr() {
     ].join("\n");
 
     const pr = tryRun(
-      `gh pr create --title "sync: rebase on upstream (${datestamp})" --body "${prBody.replace(/"/g, '\\"')}" --base main`,
+      `gh pr create --repo wopr-network/nemoclaw --title "sync: rebase on upstream (${datestamp})" --body "${prBody.replace(/"/g, '\\"')}" --base main`,
     );
     if (pr.ok) {
       log(`PR created: ${pr.output}`);
