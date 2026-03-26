@@ -286,21 +286,21 @@ function pushOrPr() {
 
   function gitPush(args) {
     if (!ghToken) return run(`git ${args}`);
-    // Add a temp remote with token in URL — bypasses all credential helpers entirely
-    const tmpRemote = `_push_${Date.now()}`;
-    const tokenUrl = `https://x-access-token:${ghToken}@github.com/wopr-network/nemoclaw.git`;
-    try {
-      run(`git remote add ${tmpRemote} ${tokenUrl}`);
-      const result = execSync(`git ${args.replace("origin", tmpRemote)}`, {
-        cwd: CWD,
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "pipe"],
-        env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "/bin/echo" },
-      }).trim();
-      return result;
-    } finally {
-      tryRun(`git remote remove ${tmpRemote}`);
-    }
+    // Debug: dump what credential helpers are active
+    log("DEBUG credential.helper: " + tryRun("git config --show-origin --get-all credential.helper").output);
+    log("DEBUG GH_PAT first 8: " + ghToken.slice(0, 8) + "...");
+    log("DEBUG git credential-manager version: " + tryRun("git-credential-manager --version").output);
+    log("DEBUG gh auth status: " + tryRun("gh auth status").output);
+    // Use gh CLI's built-in git credential helper instead of fighting it
+    // gh auth setup-git registers gh as credential.helper for github.com
+    // So just make sure GH_TOKEN env is set — gh respects it for auth
+    const result = execSync(`git ${args}`, {
+      cwd: CWD,
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env, GH_TOKEN: ghToken, GITHUB_TOKEN: ghToken, GIT_TERMINAL_PROMPT: "0" },
+    }).trim();
+    return result;
   }
 
   if (AUTO_PUSH) {
