@@ -304,8 +304,9 @@ function pushOrPr() {
     const datestamp = new Date().toISOString().slice(0, 10);
     const branch = `sync/upstream-${datestamp}`;
     tryRun(`git branch -D ${branch}`);
+    tryRun(`git push origin --delete ${branch}`);
     run(`git checkout -b ${branch}`);
-    gitPush(`push -u origin ${branch} --force-with-lease`);
+    gitPush(`push -u origin ${branch} --force`);
 
     const prBody = [
       "## Automated upstream sync",
