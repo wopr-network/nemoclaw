@@ -162,10 +162,10 @@ The fork adds a WOPR sidecar for managed hosting. Our additions:
 `;
 
 // ---------------------------------------------------------------------------
-// Rebase
+// Merge upstream
 // ---------------------------------------------------------------------------
 
-async function rebase() {
+async function mergeUpstream() {
   log("Fetching upstream...");
   run("git fetch upstream");
 
@@ -174,7 +174,7 @@ async function rebase() {
 
   if (behind === 0) {
     log("Already up to date with upstream.");
-    return { rebased: false, behind: 0, ahead };
+    return { merged: false, behind: 0, ahead };
   }
 
   log(`Behind upstream by ${behind} commits, ahead by ${ahead} commits.`);
@@ -186,22 +186,22 @@ async function rebase() {
   run(`git branch ${backupBranch}`);
   log(`Backup: ${backupBranch}`);
 
-  // Attempt rebase
-  log("Rebasing onto upstream/main...");
-  const rebaseResult = tryRun("git rebase upstream/main");
+  // Attempt merge (far fewer conflicts than rebase for forks with custom commits)
+  log("Merging upstream/main...");
+  const mergeResult = tryRun("git merge upstream/main --no-edit");
 
-  if (rebaseResult.ok) {
-    log("Rebase succeeded cleanly.");
-    return { rebased: true, behind, ahead };
+  if (mergeResult.ok) {
+    log("Merge succeeded cleanly.");
+    return { merged: true, behind, ahead };
   }
 
   // Conflicts — invoke agent
-  log("Rebase has conflicts. Invoking agent to resolve...");
+  log("Merge has conflicts. Invoking agent to resolve...");
   const conflicting = tryRun("git diff --name-only --diff-filter=U");
   const conflictFiles = conflicting.ok ? conflicting.output : "unknown";
 
   await runAgent(
-    `You are resolving git rebase conflicts in a NemoClaw fork.
+    `You are resolving git merge conflicts in a NemoClaw fork.
 
 ${FORK_CONTEXT}
 
@@ -215,22 +215,21 @@ ${conflictFiles}
 1. For each conflicting file, read it and find the conflict markers (<<<<<<< / ======= / >>>>>>>)
 2. Resolve each conflict following the rules above
 3. Run: git add <resolved-file>
-4. After ALL conflicts are resolved, run: git rebase --continue
-5. If new conflicts appear, repeat
-6. Continue until the rebase completes
+4. After ALL conflicts are resolved, run: git commit --no-edit
+5. Verify no conflict markers remain: grep -r '<<<<<<' . || echo "clean"
 
-IMPORTANT: Do NOT use git rebase --abort. Resolve all conflicts.`,
-    { model: "claude-haiku-4-5-20251001", maxTurns: 80, phase: "rebase-conflicts" },
+IMPORTANT: Do NOT use git merge --abort. Resolve all conflicts.`,
+    { model: "claude-haiku-4-5-20251001", phase: "merge-conflicts" },
   );
 
-  // Verify rebase completed
-  const status = tryRun("git rebase --show-current-patch");
-  if (status.ok) {
-    die("Rebase still in progress after agent intervention. Manual resolution needed.");
+  // Verify merge completed
+  const status = tryRun("git diff --name-only --diff-filter=U");
+  if (status.ok && status.output.trim()) {
+    die("Merge conflicts remain after agent intervention. Manual resolution needed.");
   }
 
-  log("Rebase completed after conflict resolution.");
-  return { rebased: true, behind, ahead };
+  log("Merge completed after conflict resolution.");
+  return { merged: true, behind, ahead };
 }
 
 // ---------------------------------------------------------------------------
@@ -358,9 +357,9 @@ async function main() {
     die("Working tree is dirty. Commit or stash changes first.");
   }
 
-  const { rebased, behind } = await rebase();
+  const { merged, behind } = await mergeUpstream();
 
-  if (!rebased && behind === 0) {
+  if (!merged && behind === 0) {
     log("Up to date. Nothing to do.");
     flushLog();
     return;
