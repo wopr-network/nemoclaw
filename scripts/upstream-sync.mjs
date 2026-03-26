@@ -105,7 +105,7 @@ async function runAgent(prompt, opts = {}) {
   let result = "";
   let turnCount = 0;
 
-  log(`Agent [${phase}] starting (model: ${opts.model ?? "claude-sonnet-4-6"}, maxTurns: ${opts.maxTurns ?? 60})`);
+  log(`Agent [${phase}] starting (model: ${opts.model ?? "claude-haiku-4-5-20251001"}, maxTurns: ${opts.maxTurns ?? 60})`);
   logEvent(phase, { type: "agent_start", model: opts.model, maxTurns: opts.maxTurns ?? 60 });
 
   for await (const message of _query({
@@ -116,7 +116,7 @@ async function runAgent(prompt, opts = {}) {
       permissionMode: "bypassPermissions",
       allowDangerouslySkipPermissions: true,
       maxTurns: opts.maxTurns ?? 60,
-      model: opts.model ?? "claude-sonnet-4-6",
+      model: opts.model ?? "claude-haiku-4-5-20251001",
     },
   })) {
     if (message.type === "tool_use") {
@@ -220,7 +220,7 @@ ${conflictFiles}
 6. Continue until the rebase completes
 
 IMPORTANT: Do NOT use git rebase --abort. Resolve all conflicts.`,
-    { model: "claude-sonnet-4-6", maxTurns: 80, phase: "rebase-conflicts" },
+    { model: "claude-haiku-4-5-20251001", maxTurns: 80, phase: "rebase-conflicts" },
   );
 
   // Verify rebase completed
@@ -252,7 +252,7 @@ ${sidecarCheck.output.slice(0, 2000)}
 \`\`\`
 
 Fix the syntax error in wopr/sidecar.js. Do NOT remove sidecar functionality.`,
-      { model: "claude-sonnet-4-6", phase: "sidecar-fix" },
+      { model: "claude-haiku-4-5-20251001", phase: "sidecar-fix" },
     );
   }
 
