@@ -33,51 +33,6 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
             ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:staging
             ghcr.io/${{ github.repository }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  deploy-staging:
-    if: github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, Linux, X64]
-    needs: build-and-push
-    steps:
-      - name: Deploy to staging VPS
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: root
-          key: ${{ secrets.PROD_SSH_KEY }}
-          script: |
-            set -euo pipefail
-            cd /opt/nemoclaw-platform
-            COMPOSE="docker compose -f docker-compose.yml -f docker-compose.staging.yml"
-            $COMPOSE stop staging-api 2>/dev/null || true
-            $COMPOSE pull staging-api
-            $COMPOSE up -d staging-postgres
-            sleep 3
-            $COMPOSE exec -T staging-postgres psql -U nemoclaw -d nemoclaw_platform -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" 2>/dev/null || true
-            docker compose exec -T postgres pg_dump -U nemoclaw --no-owner --no-acl nemoclaw_platform | \
-              $COMPOSE exec -T staging-postgres psql -U nemoclaw -d nemoclaw_platform -q
-            $COMPOSE up -d staging-api staging-ui
-            docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || docker compose restart caddy
-            echo "Staging deployed"
-
-      - name: Verify staging health
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: root
-          key: ${{ secrets.PROD_SSH_KEY }}
-          script: |
-            for i in $(seq 1 30); do
-              if docker exec nemoclaw-platform-staging-api-1 curl -sf http://localhost:3100/health >/dev/null 2>&1; then
-                echo "Staging API is healthy"
-                exit 0
-              fi
-              sleep 2
-            done
-            echo "Health check timed out"
-            docker logs nemoclaw-platform-staging-api-1 --tail 20
-            exit 1
