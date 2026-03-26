@@ -280,46 +280,27 @@ function pushOrPr() {
     return;
   }
 
-  // Configure git auth — set remote URL with token directly and kill all credential helpers
+  // Configure git auth — use inline -c flags to override ALL config levels (including system)
+  // This is the only approach that beats a system-level credential manager without sudo
   const ghToken = process.env.GH_TOKEN;
-  const pushEnv = {};
+  let gitPushPrefix = "git";
   if (ghToken) {
-    // Nuclear option: override remote URL with embedded token AND disable credential helpers
-    // via env vars (takes precedence over all config levels including system)
-    run(`git remote set-url origin https://x-access-token:${ghToken}@github.com/wopr-network/nemoclaw.git`);
-    tryRun("git config --local --unset-all credential.helper");
-    tryRun("git config --global --unset-all credential.helper");
-    tryRun("git config --system --unset-all credential.helper");
-    // Also set extraheader as belt-and-suspenders
     const basicAuth = Buffer.from(`x-access-token:${ghToken}`).toString("base64");
-    tryRun("git config --local --unset-all http.https://github.com/.extraheader");
-    run(`git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ${basicAuth}"`);
-    // Env-level overrides that bypass any credential manager
-    pushEnv.GIT_TERMINAL_PROMPT = "0";
-    pushEnv.GIT_ASKPASS = "/bin/true";
-    pushEnv.GCM_INTERACTIVE = "never";
-    log("Configured git auth (token URL + extraheader + env overrides).");
-  }
-
-  function gitPush(cmd) {
-    return execSync(cmd, {
-      cwd: CWD,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-      env: { ...process.env, ...pushEnv },
-    }).trim();
+    // -c flags override system/global/local config for this command only
+    gitPushPrefix = `git -c credential.helper= -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${basicAuth}"`;
+    log("Will use inline -c auth overrides for push.");
   }
 
   if (AUTO_PUSH) {
     log("Force-pushing to origin/main...");
-    gitPush("git push --force-with-lease origin main");
+    run(`${gitPushPrefix} push --force-with-lease origin main`);
     log("Pushed successfully.");
   } else if (CREATE_PR) {
     const datestamp = new Date().toISOString().slice(0, 10);
     const branch = `sync/upstream-${datestamp}`;
     tryRun(`git branch -D ${branch}`);
     run(`git checkout -b ${branch}`);
-    gitPush(`git push -u origin ${branch} --force-with-lease`);
+    run(`${gitPushPrefix} push -u origin ${branch} --force-with-lease`);
 
     const prBody = [
       "## Automated upstream sync",
