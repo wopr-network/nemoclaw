@@ -205,7 +205,6 @@ describe("CLI dispatch", () => {
     expect(calls.some((call) => call.startsWith("forward start --background 18789"))).toBe(false);
   });
 
-
   it("removes stale registry entries when connect targets a missing live sandbox", () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "nemoclaw-cli-stale-connect-"));
     const localBin = path.join(home, "bin");
